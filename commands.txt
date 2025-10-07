@@ -1,7 +1,0 @@
-curl https://s3.eu-central-1.amazonaws.com/public.prod.usetandem.ai/sessions.json > sessions.json
-
-uv init
-uv add pandas
-uv run python main.py
-
-uv run streamlit run dashboard.py

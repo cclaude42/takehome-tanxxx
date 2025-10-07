@@ -2,26 +2,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 import plotly.graph_objects as go
-import sys
-import time
-from datetime import datetime
-
-
-def _now_ts() -> str:
-    """Return current timestamp in ISO format with milliseconds."""
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-
-
-def _log_stderr(message: str, start: float | None = None) -> float:
-    """Print a timestamped message to stderr; returns a perf counter for elapsed timing."""
-    ts = _now_ts()
-    if start is not None:
-        elapsed_ms = (time.perf_counter() - start) * 1000.0
-        sys.stderr.write(f"[{ts}] {message} — {elapsed_ms:.1f} ms\n")
-    else:
-        sys.stderr.write(f"[{ts}] {message}\n")
-    sys.stderr.flush()
-    return time.perf_counter()
 
 
 def _get_funnel_sessions(df: pd.DataFrame):
@@ -83,8 +63,8 @@ def _compute_funnel_fig(df: pd.DataFrame):
         }
     )
 
-    fig = px.funnel(funnel_df, y="stage", x="count", title="Cart Funnel")
-    
+    fig = px.funnel(funnel_df, y="stage", x="count", title="User funnel")
+
     # Make text black and remove hover tooltips
     fig.update_traces(
         textfont_color="black",
@@ -96,12 +76,10 @@ def _compute_funnel_fig(df: pd.DataFrame):
 
 
 def _display_stage_details(df: pd.DataFrame, stage_name: str, sessions_in_stage: set, sessions_moved_next: set):
-    """Display detailed information for a funnel stage in language suited for product review."""
+    """Display detailed information for a funnel stage."""
     total = len(sessions_in_stage)
     moved_next = len(sessions_moved_next)
     dropped = total - moved_next
-    
-    st.subheader(f"📊 {stage_name}: what happened here?")
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -112,10 +90,8 @@ def _display_stage_details(df: pd.DataFrame, stage_name: str, sessions_in_stage:
         st.metric("Dropped here", dropped)
     
     if dropped > 0:
-        st.subheader("🔍 Who dropped and what they did")
         dropped_sessions = sessions_in_stage - sessions_moved_next
-        
-        # Always show navigation and a single events table by default
+
         key_base = f"peek_{stage_name.replace(' ', '_').lower()}"
         index_key = f"{key_base}_idx"
         if index_key not in st.session_state:
@@ -140,12 +116,10 @@ def _display_stage_details(df: pd.DataFrame, stage_name: str, sessions_in_stage:
             with nav_cols[1]:
                 st.markdown(f"**Session {current_idx + 1} of {total_sessions}** — `{current_session_id}`")
 
-            _t_filter = _log_stderr("Details: filtering session events")
             session_events = df[df["session_id"].astype(str) == current_session_id]
             st.dataframe(
                 session_events[["path", "css", "text", "value", "event_time"]].head(50),
             )
-            _log_stderr("Details: rendered session events table", _t_filter)
 
 
 def _handle_stage_selection(df: pd.DataFrame, stage_name: str, sessions: dict):
@@ -168,10 +142,9 @@ def _handle_stage_selection(df: pd.DataFrame, stage_name: str, sessions: dict):
 
 
 def main():
-    _t_app = _log_stderr("App: start main()")
-    st.set_page_config(page_title="Shopping journey funnel", layout="wide")
-    st.title("Shopping journey funnel")
-    st.caption("A quick read on where shoppers move forward and where they drop.")
+    st.set_page_config(page_title="User journey dashboard", layout="wide")
+    st.title("User journey dashboard")
+    st.caption("A quick read on where shoppers move forward and where they drop out.")
 
     # Styling: make the selector feel clickable and on-brand (blue), pointer cursor on hover
     st.markdown(
@@ -200,40 +173,29 @@ def main():
 
     # Load data
     try:
-        _t_load = _log_stderr(f"IO: start reading data '{data_file}'")
         if lines_json:
             df = pd.read_json(data_file, lines=True)
         else:
             df = pd.read_json(data_file)
-        _log_stderr("IO: finished reading data", _t_load)
     except Exception as e:
         st.error(f"Failed to load data from '{data_file}': {e}")
         return
 
     # Pages (tabs) for top-level navigation
-    _t_tabs = _log_stderr("UI: creating tabs")
     tabs = st.tabs(["User funnel", "Step details", "Customer insights"])
-    _log_stderr("UI: tabs ready", _t_tabs)
 
     # Precompute sessions once
-    _t_sessions = _log_stderr("Compute: start precomputing sessions")
     sessions = _get_funnel_sessions(df)
-    _log_stderr("Compute: finished precomputing sessions", _t_sessions)
 
     # Page 1: Funnel
     with tabs[0]:
-        st.subheader("Cart funnel")
-        _t_fig = _log_stderr("Viz: start funnel figure")
+        st.subheader("How many users move through each step?")
         funnel_fig = _compute_funnel_fig(df)
-        _log_stderr("Viz: built funnel figure", _t_fig)
-        _t_render = _log_stderr("Viz: start funnel render")
         st.plotly_chart(funnel_fig)
-        _log_stderr("Viz: finished funnel render", _t_render)
 
     # Page 2: Step details
     with tabs[1]:
-        st.subheader("Dig into a step")
-        st.caption("Pick a step to see who moved forward and who didn't.")
+        st.subheader("Who moved forward and who didn't?")
         stage_options = [
             "Viewed Product",
             "Added to Cart",
@@ -243,17 +205,13 @@ def main():
         selected_stage = st.selectbox("Which step do you want to inspect?", stage_options)
         if selected_stage:
             st.divider()
-            _t_stage = _log_stderr(f"UI: handle stage '{selected_stage}'")
             _handle_stage_selection(df, selected_stage, sessions)
-            _log_stderr(f"UI: finished stage '{selected_stage}'", _t_stage)
 
     # Page 3: Customer insights
     with tabs[2]:
         st.subheader("Why shoppers didn't complete their order")
-        st.caption("A read on the most common failure reasons across sessions that didn't convert.")
 
         # Cohorts
-        _t_insights = _log_stderr("Insights: start cohorts + reasons")
         sessions_with_product_view = set(
             df[df["path"].str.startswith("/products", na=False)]["session_id"].astype(str)
         )
@@ -292,28 +250,20 @@ def main():
             message = first.get("text", "Error") or "Error"
             return f"{path} - {message}"
 
-        _t_classify = _log_stderr("Insights: start per-session classification loop")
         records: list[dict] = []
         for session_id in viewed_not_placed:
             session_df = df[df["session_id"].astype(str) == session_id]
             reason = classify_loss_reason(session_df)
             records.append({"session_id": session_id, "reason": reason})
-        _log_stderr("Insights: finished classification loop", _t_classify)
 
         if records:
             reasons_df = pd.DataFrame.from_records(records)
-            _t_group = _log_stderr("Insights: start groupby reasons")
             agg_df = reasons_df.groupby("reason", as_index=False).size().rename(columns={"size": "count"})
-            _log_stderr("Insights: finished groupby reasons", _t_group)
 
             # Hoverable pie chart
-            _t_pie = _log_stderr("Insights: start pie figure")
             fig = px.pie(agg_df, values="count", names="reason", title="What stopped shoppers from completing checkout")
             fig.update_traces(textfont_color="black")
-            _log_stderr("Insights: built pie figure", _t_pie)
-            _t_pie_render = _log_stderr("Insights: start pie render")
             st.plotly_chart(fig)
-            _log_stderr("Insights: finished pie render", _t_pie_render)
 
             # Selectable menu to explore a reason (including "No error") like in details page
             all_reasons_sorted = agg_df.sort_values("count", ascending=False)
@@ -361,7 +311,6 @@ def main():
                 st.write("No errors detected among non-converting sessions.")
         else:
             st.info("No non-converting sessions found from product views.")
-        _log_stderr("Insights: end cohorts + reasons", _t_insights)
 
 
 

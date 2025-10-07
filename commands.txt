@@ -4,3 +4,4 @@ uv init
 uv add pandas
 uv run python main.py
 
+uv run streamlit run dashboard.py

@@ -42,3 +42,9 @@ User 0a0b0c0d-0e0f-1011-1213-141516171819 has 5 events
 
 14:20 - made a couple plotly graphs to have a look, now opting for a streamlit dashboard to see how it compares
 
+
+15:00 - worked on a streamlit dashboard, complete with funnel view, detailed step analysis, drop out reason tab. purpose is to make data easily processable by product teams, while still giving some granular access (data row view)
+
+15:30 cleaned up repo
+
+16:00 investigated potential performance issues, most likely due to streamlit reload issue (stopping time and reloading time). assessed this wouldn't be a problem to users.

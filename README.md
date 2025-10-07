@@ -90,7 +90,7 @@ I built a simple Streamlit app (easy visualization dashboarding in Python), with
 
 The following errors led to no purchase from users :
 - Payment declined
-- Payment service waas unavailable
+- Payment service was unavailable
 - Payment method was unrecognized
 - Item was out of stock
 - User was unable to update preference (language?)

@@ -40,3 +40,5 @@ User 0a0b0c0d-0e0f-1011-1213-141516171819 has 5 events
 ```
 
 
+14:20 - made a couple plotly graphs to have a look, now opting for a streamlit dashboard to see how it compares
+

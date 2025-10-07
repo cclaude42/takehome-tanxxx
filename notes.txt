@@ -8,3 +8,7 @@
   - What problems do they encounter ?
   - What patterns emerge ?
 
+
+
+-> why did i use what I used ?
+-> python is simple and quick to work with data analysis, especially with pandas. would go for polars if performance was an issue. plotly is good for simple graph, streamlit simple for interactive diagrams

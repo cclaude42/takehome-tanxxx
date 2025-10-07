@@ -1,0 +1,10 @@
+- each event is a user action
+- both user id and session id
+  - use session id to identify session patterns (user path)
+  - use user id to identify repeat buyers
+
+- Objectives :
+  - How do users navigate ?
+  - What problems do they encounter ?
+  - What patterns emerge ?
+
